@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="cyber">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI伙伴亲密度 · 养成系学习助手</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-deep);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font);
+    padding: 20px;
+  }
+
+  body.theme-grid::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    pointer-events: none;
+  }
+
+  .demo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    max-width: 460px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .demo-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .demo-title span {
+    color: var(--accent);
+  }
+
+  .data-panel {
+    display: flex; gap: 16px; width: 100%;
+    flex-wrap: wrap;
+  }
+  .data-card {
+    flex: 1; min-width: 100px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    text-align: center;
+  }
+  .data-card .label {
+    font-size: 0.72rem; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .data-card .value {
+    font-size: 1.5rem; font-weight: 700; color: var(--text);
+  }
+
+  .reset-link {
+    font-size: 0.78rem; color: var(--text-dim);
+    cursor: pointer; text-decoration: underline;
+    transition: color 0.2s;
+  }
+  .reset-link:hover { color: var(--danger); }
+
+  /* Theme switcher */
+  .theme-switcher {
+    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  }
+  .theme-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-dot:hover { transform: scale(1.15); }
+  .theme-dot.active { border-color: var(--text); box-shadow: 0 0 10px var(--accent-glow); }
+  .theme-dot.cyber { background: #42A5F5; }
+  .theme-dot.forest { background: #66BB6A; }
+  .theme-dot.sunset { background: #FF7043; }
+
+  /* Level-up celebration overlay */
+  .celebrate-overlay {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .celebrate-text {
+    font-size: 2rem; font-weight: 900;
+    animation: celebratePop 1.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    text-shadow: 0 0 40px currentColor;
+  }
+  @keyframes celebratePop {
+    0% { opacity: 0; transform: scale(0.3); }
+    30% { opacity: 1; transform: scale(1.2); }
+    50% { transform: scale(0.95); }
+    70% { transform: scale(1.05); }
+    100% { opacity: 0; transform: scale(1) translateY(-20px); }
+  }
+</style>
+</head>
+<body class="theme-grid">
+
+<div class="celebrate-overlay" id="celebrateOverlay"></div>
+
+<div class="demo-container">
+  <div class="demo-title">🤖 <span>AI 伙伴</span> · 亲密度养成</div>
+
+  <!-- Theme switcher -->
+  <div class="theme-switcher">
+    <span class="theme-dot cyber active" data-theme="cyber" title="赛博终端"></span>
+    <span class="theme-dot forest" data-theme="forest" title="霓虹森林"></span>
+    <span class="theme-dot sunset" data-theme="sunset" title="日落竞技"></span>
+  </div>
+
+  <!-- Data panel -->
+  <div class="data-panel">
+    <div class="data-card">
+      <div class="label">当前积分</div>
+      <div class="value" id="scoreDisplay">0</div>
+    </div>
+    <div class="data-card">
+      <div class="label">当前等级</div>
+      <div class="value" id="levelDisplay">Lv.1</div>
+    </div>
+    <div class="data-card">
+      <div class="label">下一级</div>
+      <div class="value" id="nextDisplay">100 分</div>
+    </div>
+  </div>
+
+  <!-- Widget mount point -->
+  <div id="intimacyWidget"></div>
+
+  <span class="reset-link" id="resetBtn">↺ 重置数据</span>
+</div>
+
+<script src="theme.js"></script>
+<script type="module">
+  import { IntimacyManager } from './intimacy-module.js';
+  import { renderWidget } from './intimacy-widget.js';
+
+  // ── Theme switcher ──
+  document.querySelectorAll('.theme-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const name = dot.dataset.theme;
+      applyTheme(name);
+      document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+    });
+  });
+
+  // ── 1. Load config from JSON (fallback to inline if file:// blocked) ──
+  const config = await IntimacyManager.loadConfig('intimacy-config.json').catch(() => {
+    // Fallback — mirrors intimacy-config.json exactly
+    return {
+      levels: [
+        { id: 'stranger', label: '陌生人', maxScore: 100, emoji: '🧊', color: '#9E9E9E' },
+        { id: 'buddy',    label: '学习搭子', maxScore: 300, emoji: '😊', color: '#42A5F5' },
+        { id: 'rival',    label: '思维宿敌', maxScore: Infinity, emoji: '😏', color: '#FFD700' },
+      ],
+      scoreRules: { deepAnswer: 5, revisit: 2, passport: 10 },
+      nickname: '学霸',
+    };
+  });
+
+  // ── 2. Create manager ──
+  const manager = new IntimacyManager(config);
+  const widget = renderWidget('#intimacyWidget', manager);
+
+  // ── Data panel sync ──
+  function syncDataPanel() {
+    document.getElementById('scoreDisplay').textContent = manager.score;
+    const lvl = manager.level;
+    document.getElementById('levelDisplay').textContent = `Lv.${manager.levelIndex + 1} ${lvl.emoji}`;
+    const next = manager.nextLevelScore;
+    document.getElementById('nextDisplay').textContent = next === Infinity ? 'MAX' : next + ' 分';
+  }
+  syncDataPanel();
+
+  // Refresh panel after each action
+  const origAddScore = manager.addScore.bind(manager);
+  manager.addScore = function(type) {
+    const result = origAddScore(type);
+    syncDataPanel();
+    return result;
+  };
+
+  // ── Level-up celebration ──
+  window.addEventListener('intimacyLevelUp', (e) => {
+    syncDataPanel();
+    const { newLevel } = e.detail;
+    const overlay = document.getElementById('celebrateOverlay');
+    const text = document.createElement('div');
+    text.className = 'celebrate-text';
+    text.textContent = `${newLevel.emoji} ${newLevel.label}！`;
+    text.style.color = newLevel.color;
+    overlay.appendChild(text);
+    text.addEventListener('animationend', () => text.remove());
+  });
+
+  // ── Reset ──
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (confirm('确定要重置所有数据吗？')) {
+      manager.reset();
+      location.reload();
+    }
+  });
+</script>
+</body>
+</html>

@@ -21,6 +21,33 @@
     canvasHeight: 600,
     devicePixelRatio: null, // auto-detect, capped at 2
     storageKey: 'hexagon-radar-values', // localStorage key for runtime values
+    // Canvas theme colors (override for skinning)
+    theme: {
+      bgDeep: '#0B0F19',
+      bgMid: '#1A233A',
+      gridLine: 'rgba(255, 255, 255, 0.08)',
+      gridLineOuter: 'rgba(255, 255, 255, 0.18)',
+      axisLine: 'rgba(255, 255, 255, 0.06)',
+      labelColor: '#E8E8E8',
+      polygonGlow: 'rgba(255, 193, 7, 0.7)',
+      polygonFillCenter: 'rgba(255, 152, 0, 0.55)',
+      polygonFillMid: 'rgba(255, 193, 7, 0.35)',
+      polygonFillEdge: 'rgba(255, 193, 7, 0.18)',
+      polygonFillOuter: 'rgba(255, 215, 0, 0.06)',
+      polygonStroke: 'rgba(255, 215, 0, 0.7)',
+      prevPolygonStroke: 'rgba(255, 255, 255, 0.45)',
+      dotInner: '#FFFFFF',
+      pulseColor: '#FFD700',
+      sparkleColor: '#FFE082',
+      badgeFillCenter: 'rgba(255, 180, 0, 0.9)',
+      badgeFillMid: 'rgba(255, 200, 0, 0.75)',
+      badgeFillEdge: 'rgba(255, 215, 0, 0.5)',
+      badgeFillOuter: 'rgba(255, 230, 50, 0.2)',
+      badgeStroke: 'rgba(255, 215, 0, 0.9)',
+      badgeText: '#FFD700',
+      tooltipBg: 'rgba(10, 15, 30, 0.92)',
+      starColor: 'rgba(255, 255, 255,',
+    },
     messages: {
       single: [
         '🔥 厉害！{dim}大幅提升，继续保持！',
@@ -414,8 +441,22 @@
         ...options,
         messages: { ...DEFAULTS.messages, ...(options.messages || {}) },
         callbacks: { ...DEFAULTS.callbacks, ...(options.callbacks || {}) },
+        theme: { ...DEFAULTS.theme, ...(options.theme || {}) },
       };
       return merged;
+    }
+
+    /** Shortcut: get theme color by key */
+    _t(key) {
+      return this.opts.theme[key];
+    }
+
+    /**
+     * Update theme colors at runtime (for skin switching).
+     * @param {Object} theme — partial theme object, merged with current
+     */
+    setTheme(theme) {
+      Object.assign(this.opts.theme, theme);
     }
 
     _getAngle(index) {
@@ -490,7 +531,7 @@
       const ctx = this.ctx;
       for (const s of this._stars) {
         const alpha = s.baseAlpha + Math.sin(time * 0.001 * s.twinkleSpeed + s.twinkleOffset) * 0.2;
-        ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.1, alpha)})`;
+        ctx.fillStyle = `${this._t('starColor')} ${Math.max(0.1, alpha)})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fill();
@@ -514,8 +555,8 @@
         }
         ctx.closePath();
         ctx.strokeStyle = lvl === 1.0
-          ? 'rgba(255, 255, 255, 0.18)'
-          : 'rgba(255, 255, 255, 0.08)';
+          ? this._t('gridLineOuter')
+          : this._t('gridLine');
         ctx.lineWidth = lvl === 1.0 ? 1.2 : 0.8;
         ctx.stroke();
       }
@@ -525,7 +566,7 @@
         ctx.beginPath();
         ctx.moveTo(this.CX, this.CY);
         ctx.lineTo(v.x, v.y);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+        ctx.strokeStyle = this._t('axisLine');
         ctx.lineWidth = 0.6;
         ctx.stroke();
       }
@@ -544,7 +585,7 @@
         ctx.textBaseline = 'middle';
         ctx.shadowColor = dim.color;
         ctx.shadowBlur = 10;
-        ctx.fillStyle = '#E8E8E8';
+        ctx.fillStyle = this._t('labelColor');
         ctx.fillText(dim.label, v.x, v.y);
         ctx.shadowBlur = 0;
         // Colored dot
@@ -577,7 +618,7 @@
       // Outer glow
       ctx.save();
       ctx.globalAlpha = alpha * 0.5;
-      ctx.shadowColor = 'rgba(255, 193, 7, 0.7)';
+      ctx.shadowColor = this._t('polygonGlow');
       ctx.shadowBlur = 28;
       ctx.beginPath();
       ctx.moveTo(points[0].x, points[0].y);
@@ -591,17 +632,17 @@
       ctx.save();
       ctx.globalAlpha = alpha;
       const gradient = ctx.createRadialGradient(this.CX, this.CY, 0, this.CX, this.CY, this.maxR);
-      gradient.addColorStop(0, 'rgba(255, 152, 0, 0.55)');
-      gradient.addColorStop(0.45, 'rgba(255, 193, 7, 0.35)');
-      gradient.addColorStop(0.8, 'rgba(255, 193, 7, 0.18)');
-      gradient.addColorStop(1, 'rgba(255, 215, 0, 0.06)');
+      gradient.addColorStop(0, this._t('polygonFillCenter'));
+      gradient.addColorStop(0.45, this._t('polygonFillMid'));
+      gradient.addColorStop(0.8, this._t('polygonFillEdge'));
+      gradient.addColorStop(1, this._t('polygonFillOuter'));
       ctx.beginPath();
       ctx.moveTo(points[0].x, points[0].y);
       for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
       ctx.closePath();
       ctx.fillStyle = gradient;
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)';
+      ctx.strokeStyle = this._t('polygonStroke');
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
       ctx.stroke();
@@ -624,7 +665,7 @@
       ctx.moveTo(points[0].x, points[0].y);
       for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
       ctx.closePath();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.strokeStyle = this._t('prevPolygonStroke');
       ctx.lineWidth = 1.5;
       ctx.lineJoin = 'round';
       ctx.stroke();
@@ -655,8 +696,8 @@
         ctx.restore();
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.shadowColor = '#FFFFFF';
+        ctx.fillStyle = this._t('dotInner');
+        ctx.shadowColor = this._t('dotInner');
         ctx.shadowBlur = 6;
         ctx.beginPath();
         ctx.arc(x, y, 3.5, 0, Math.PI * 2);
@@ -677,9 +718,9 @@
         const v = this._getVertex(pulse.dimIndex, pulse.value);
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.strokeStyle = '#FFD700';
+        ctx.strokeStyle = this._t('pulseColor');
         ctx.lineWidth = 2.5 * (1 - progress);
-        ctx.shadowColor = '#FFD700';
+        ctx.shadowColor = this._t('pulseColor');
         ctx.shadowBlur = 16 * (1 - progress);
         ctx.beginPath();
         ctx.arc(v.x, v.y, ringR, 0, Math.PI * 2);
@@ -687,9 +728,9 @@
         ctx.restore();
         ctx.save();
         ctx.globalAlpha = alpha * 0.4;
-        ctx.strokeStyle = '#FFD700';
+        ctx.strokeStyle = this._t('pulseColor');
         ctx.lineWidth = 1.2 * (1 - progress);
-        ctx.shadowColor = '#FFD700';
+        ctx.shadowColor = this._t('pulseColor');
         ctx.shadowBlur = 8 * (1 - progress);
         ctx.beginPath();
         ctx.arc(v.x, v.y, ringR * 1.6, 0, Math.PI * 2);
@@ -713,8 +754,8 @@
         const sy = v.y + orbitR * Math.sin(orbitAngle);
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.fillStyle = '#FFE082';
-        ctx.shadowColor = '#FFD700';
+        ctx.fillStyle = this._t('sparkleColor');
+        ctx.shadowColor = this._t('pulseColor');
         ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(sx, sy, size, 0, Math.PI * 2);
@@ -764,17 +805,17 @@
       // Solid hexagon
       ctx.save();
       const gradient = ctx.createRadialGradient(this.CX, this.CY, this.maxR * 0.2, this.CX, this.CY, this.maxR);
-      gradient.addColorStop(0, 'rgba(255, 180, 0, 0.9)');
-      gradient.addColorStop(0.5, 'rgba(255, 200, 0, 0.75)');
-      gradient.addColorStop(0.8, 'rgba(255, 215, 0, 0.5)');
-      gradient.addColorStop(1, 'rgba(255, 230, 50, 0.2)');
+      gradient.addColorStop(0, this._t('badgeFillCenter'));
+      gradient.addColorStop(0.5, this._t('badgeFillMid'));
+      gradient.addColorStop(0.8, this._t('badgeFillEdge'));
+      gradient.addColorStop(1, this._t('badgeFillOuter'));
       ctx.beginPath();
       ctx.moveTo(hexPoints[0].x, hexPoints[0].y);
       for (let i = 1; i < hexPoints.length; i++) ctx.lineTo(hexPoints[i].x, hexPoints[i].y);
       ctx.closePath();
       ctx.fillStyle = gradient;
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 215, 0, 0.9)';
+      ctx.strokeStyle = this._t('badgeStroke');
       ctx.lineWidth = 3;
       ctx.lineJoin = 'round';
       ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
@@ -822,8 +863,8 @@
         ctx.fill();
         ctx.restore();
         ctx.save();
-        ctx.fillStyle = '#FFFFFF';
-        ctx.shadowColor = '#FFFFFF';
+        ctx.fillStyle = this._t('dotInner');
+        ctx.shadowColor = this._t('dotInner');
         ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(v.x, v.y, 3.5, 0, Math.PI * 2);
@@ -852,7 +893,7 @@
       ctx.textBaseline = 'middle';
       ctx.shadowColor = 'rgba(255, 215, 0, 0.7)';
       ctx.shadowBlur = 12;
-      ctx.fillStyle = '#FFD700';
+      ctx.fillStyle = this._t('badgeText');
       ctx.fillText('六边形战士', this.CX, this.CY + 38);
       ctx.restore();
 
@@ -866,8 +907,8 @@
         const size = bs.size * (1 - progress * 0.5);
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.fillStyle = '#FFE082';
-        ctx.shadowColor = '#FFD700';
+        ctx.fillStyle = this._t('sparkleColor');
+        ctx.shadowColor = this._t('pulseColor');
         ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.moveTo(sx, sy - size * 2);
@@ -917,7 +958,7 @@
       tx = Math.max(4, Math.min(this.W - tw - 4, tx));
       ty = Math.max(4, ty);
       ctx.save();
-      ctx.fillStyle = 'rgba(10, 15, 30, 0.92)';
+      ctx.fillStyle = this._t('tooltipBg');
       ctx.strokeStyle = dim.color;
       ctx.lineWidth = 1.5;
       ctx.shadowColor = dim.color;

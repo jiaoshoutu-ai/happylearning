@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="cyber">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成就博物馆 · 六边形战士勋章墙</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-deep);
+    min-height: 100vh;
+    font-family: var(--font);
+    padding: 20px;
+  }
+
+  body.theme-grid::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .demo-header {
+    text-align: center;
+    padding: 30px 20px 10px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .demo-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-strong) 40%, var(--gold) 70%, var(--gold-strong) 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .demo-header p {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-top: 6px;
+  }
+
+  .demo-controls {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    justify-content: center;
+    padding: 20px;
+    position: relative; z-index: 1;
+  }
+
+  .demo-btn {
+    padding: 10px 18px;
+    font-size: 0.82rem; font-weight: 600;
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .demo-btn:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+    transform: translateY(-1px);
+  }
+
+  .demo-btn:active {
+    transform: translateY(0);
+  }
+
+  .demo-btn.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .demo-btn.danger {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .demo-btn.danger:hover {
+    box-shadow: 0 0 12px rgba(239, 83, 80, 0.25);
+  }
+
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--bg-panel);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 12px 24px;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    font-size: 0.95rem;
+    z-index: 1000;
+    pointer-events: none;
+    animation: toastIn 0.4s ease-out, toastOut 0.4s 1.8s ease-out forwards;
+    box-shadow: 0 0 24px var(--gold-glow);
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; }
+    to   { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  }
+
+  .demo-main {
+    position: relative; z-index: 1;
+  }
+
+  .reset-link {
+    display: block; text-align: center;
+    font-size: 0.78rem; color: var(--text-dim);
+    cursor: pointer; text-decoration: underline;
+    padding: 20px;
+    transition: color 0.2s;
+  }
+  .reset-link:hover { color: var(--danger); }
+</style>
+</head>
+<body class="theme-grid">
+
+<div class="demo-header">
+  <h1>🏛️ 成就博物馆</h1>
+  <p>六边形战士勋章墙 · 解锁特权，进化你的 AI 伙伴</p>
+</div>
+
+<div class="demo-controls">
+  <button class="demo-btn primary" data-action="level1">🎯 完成第1关</button>
+  <button class="demo-btn" data-action="empathy">🤝 完美复述观点</button>
+  <button class="demo-btn" data-action="hypothesis">💡 提出假设</button>
+  <button class="demo-btn" data-action="evidence">🔍 引用视频细节</button>
+  <button class="demo-btn" data-action="deepAnswer">🧠 深度回答(200字+)</button>
+  <button class="demo-btn" data-action="logicalFix">⚔️ 逻辑修正</button>
+  <button class="demo-btn" data-action="perspective">👑 强制换位</button>
+  <button class="demo-btn" data-action="passport">🎫 导出护照</button>
+  <button class="demo-btn" data-action="zenStreak">🧘 连续答对</button>
+  <button class="demo-btn danger" data-action="reset">↺ 重置数据</button>
+</div>
+
+<div class="demo-main" id="museumContainer"></div>
+
+<script src="theme.js"></script>
+<script src="achievement-config.js"></script>
+<script type="module">
+  import { AchievementManager } from './achievement-manager.js';
+  import { renderMuseum } from './achievement-widget.js';
+
+  // ── Init ──
+  const manager = new AchievementManager();
+  const widget = renderMuseum('#museumContainer', manager);
+
+  // ── Toast helper ──
+  function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    toast.addEventListener('animationend', function(e) {
+      if (e.animationName === 'toastOut') toast.remove();
+    });
+  }
+
+  // ── Simulate game state ──
+  const gameState = {};
+
+  function simulateAction(type, label) {
+    manager.incrementTracking(type, 1);
+    const current = manager._tracking[type] || 1;
+    gameState[type] = current;
+
+    const newlyUnlocked = manager.checkAll(gameState);
+    if (newlyUnlocked.length > 0) {
+      newlyUnlocked.forEach(ach => {
+        showToast('🏆 解锁成就：' + ach.name + '！');
+      });
+    } else {
+      const ach = manager.getAchievementProgress(
+        Object.keys(manager.config).find(id =>
+          manager.config[id].unlockCondition.type === type && !manager.getUnlocked().includes(id)
+        )
+      );
+      if (ach) {
+        showToast(ach.icon + ' ' + ach.name + ' 进度：' + ach.current + ' / ' + ach.target);
+      }
+    }
+
+    // Refresh progress bars in grid
+    refreshProgressBars();
+  }
+
+  function refreshProgressBars() {
+    const progress = manager.getProgress();
+    for (const id of Object.keys(progress)) {
+      const prog = progress[id];
+      const card = document.getElementById('ach-card-' + id);
+      if (!card || prog.unlocked) continue;
+      const fill = card.querySelector('.ach-progress-fill');
+      const label = card.querySelector('.ach-progress-label');
+      if (fill) fill.style.width = (prog.current / prog.target) * 100 + '%';
+      if (label) label.textContent = prog.current + ' / ' + prog.target;
+    }
+  }
+
+  // ── Button bindings ──
+  document.querySelectorAll('.demo-btn[data-action]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const action = this.dataset.action;
+      if (action === 'reset') {
+        if (confirm('确定要重置所有成就数据吗？')) {
+          manager.reset();
+          location.reload();
+        }
+        return;
+      }
+      if (action === 'level1') {
+        manager.incrementTracking('levelComplete', 1);
+        gameState.levelComplete = manager._tracking.levelComplete || 1;
+        const newlyUnlocked = manager.checkAll(gameState);
+        if (newlyUnlocked.length > 0) {
+          newlyUnlocked.forEach(ach => showToast('🏆 解锁成就：' + ach.name + '！'));
+        }
+        refreshProgressBars();
+        return;
+      }
+      const actionMap = {
+        empathy:     'perfectEmpathy',
+        hypothesis:  'hypotheticalCount',
+        evidence:    'evidenceCount',
+        deepAnswer:  'deepAnswerCount',
+        logicalFix:  'logicalFixCount',
+        perspective: 'perspectiveCount',
+        passport:    'passportExportCount',
+        zenStreak:   'zenStreakCount',
+      };
+      const type = actionMap[action];
+      if (type) simulateAction(type);
+    });
+  });
+
+  // ── Listen for global events ──
+  window.addEventListener('achievementUnlocked', function(e) {
+    console.log('Achievement unlocked:', e.detail.achievement.name);
+  });
+
+  window.addEventListener('privilegeActivated', function(e) {
+    console.log('Privilege activated:', e.detail.privilege.type);
+  });
+
+  // ── Expose API for debugging ──
+  window.achievementManager = manager;
+  console.log('🏛️ Achievement Museum ready.');
+  console.log('  manager.checkAll(state)  — check achievements');
+  console.log('  manager.hasPrivilege("skip_blindbox") —', manager.hasPrivilege('skip_blindbox'));
+  console.log('  manager.getProgress()   — get all progress');
+  console.log('  manager.reset()         — reset all data');
+</script>
+</body>
+</html>
