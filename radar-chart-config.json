@@ -1,0 +1,14 @@
+{
+  "title": "思辨能力雷达图",
+  "subtitle": "⚔️ 六边形战士成长日记",
+  "maxValue": 100,
+  "dimensions": [
+    { "id": "logic",       "label": "逻辑力", "color": "#4FC3F7", "initialValue": 40, "description": "论证是否因果清晰" },
+    { "id": "empathy",     "label": "共情力", "color": "#81C784", "initialValue": 70, "description": "能否站在对方立场说出理由" },
+    { "id": "evidence",    "label": "证据力", "color": "#FFB74D", "initialValue": 55, "description": "引用视频细节的次数" },
+    { "id": "foresight",   "label": "远见力", "color": "#CE93D8", "initialValue": 30, "description": "提出"长期影响"类观点的频率" },
+    { "id": "resilience",  "label": "抗挫力", "color": "#F06292", "initialValue": 85, "description": "被AI反驳后重新组织语言的次数" },
+    { "id": "perspective", "label": "换位力", "color": "#4DD0E1", "initialValue": 60, "description": "完成"强制换位"任务的总数" }
+  ],
+  "previousValues": [35, 65, 50, 25, 80, 55]
+}

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>思辨能力雷达图 · 六边形战士</title>
+<style>
+  :root {
+    --bg-deep: #0B0F19;
+    --bg-mid: #1A233A;
+    --gold: #FFD700;
+    --text: #E0E0E0;
+    --text-dim: #8892B0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: radial-gradient(ellipse at 50% 30%, #1A233A 0%, #0B0F19 70%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255, 193, 7, 0.06) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: ambientPulse 4s ease-in-out infinite;
+  }
+
+  @keyframes ambientPulse {
+    0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  }
+
+  .container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  .title {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA000 40%, #FFD700 70%, #FF8F00 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s ease-in-out infinite;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    letter-spacing: 0.15em;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+
+  .motivation {
+    color: var(--gold);
+    font-size: 1.05rem;
+    font-weight: 600;
+    min-height: 32px;
+    line-height: 32px;
+    margin-bottom: 8px;
+    text-align: center;
+    transition: all 0.4s ease;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  }
+
+  .motivation.pop {
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes popIn {
+    0% { opacity: 0; transform: translateY(12px) scale(0.9); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .chart-wrapper {
+    position: relative;
+    width: 560px;
+    max-width: 95vw;
+    aspect-ratio: 1;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .train-btn {
+    margin-top: 24px;
+    padding: 14px 40px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #1A1A2E;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 24px rgba(255, 193, 7, 0.25);
+  }
+
+  .train-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 36px rgba(255, 193, 7, 0.45);
+  }
+
+  .train-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 12px rgba(255, 193, 7, 0.3);
+  }
+
+  .train-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
+  }
+
+  .train-btn::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .train-btn:hover::after { opacity: 1; }
+  .train-btn span { position: relative; z-index: 1; }
+
+  @media (max-width: 600px) {
+    .title { font-size: 1.6rem; }
+    .subtitle { font-size: 0.8rem; }
+    .train-btn { padding: 12px 30px; font-size: 1rem; }
+    .chart-wrapper { width: 95vw; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 class="title" id="title">思辨能力雷达图</h1>
+  <p class="subtitle" id="subtitle">⚔️ 六边形战士成长日记</p>
+  <div class="motivation" id="motivation">✨ 点击下方按钮，开始你的修炼之旅</div>
+  <div class="chart-wrapper">
+    <canvas id="radar"></canvas>
+  </div>
+  <button class="train-btn" id="trainBtn">
+    <span>⚔️ 模拟修炼一节课</span>
+  </button>
+</div>
+
+<script src="radar-chart.js"></script>
+<script>
+(function() {
+  var canvas = document.getElementById('radar');
+  var motivationEl = document.getElementById('motivation');
+  var trainBtn = document.getElementById('trainBtn');
+
+  // ── 1. 加载配置（优先 fetch JSON，file:// 协议下回退到内联配置）──
+  function loadConfig() {
+    return HexagonRadar.loadConfig('radar-chart-config.json').catch(function() {
+      // Fallback for file:// protocol where fetch is blocked by CORS
+      return {
+        dimensions: [
+          { id: 'logic',       label: '逻辑力', value: 40, color: '#4FC3F7', description: '论证是否因果清晰' },
+          { id: 'empathy',     label: '共情力', value: 70, color: '#81C784', description: '能否站在对方立场说出理由' },
+          { id: 'evidence',    label: '证据力', value: 55, color: '#FFB74D', description: '引用视频细节的次数' },
+          { id: 'foresight',   label: '远见力', value: 30, color: '#CE93D8', description: '提出"长期影响"类观点的频率' },
+          { id: 'resilience',  label: '抗挫力', value: 85, color: '#F06292', description: '被AI反驳后重新组织语言的次数' },
+          { id: 'perspective', label: '换位力', value: 60, color: '#4DD0E1', description: '完成"强制换位"任务的总数' },
+        ],
+        previousValues: [35, 65, 50, 25, 80, 55],
+        title: '思辨能力雷达图',
+        subtitle: '⚔️ 六边形战士成长日记',
+      };
+    });
+  }
+
+  loadConfig().then(function(opts) {
+    // 更新页面标题
+    if (opts.title) document.getElementById('title').textContent = opts.title;
+    if (opts.subtitle) document.getElementById('subtitle').textContent = opts.subtitle;
+
+    // ── 2. 创建雷达实例 ──
+    var radar = new HexagonRadar(canvas, opts);
+
+    // ── 3. 点击维度顶点显示能力解释 ──
+    radar.opts.callbacks.onDimensionClick = function(dim, value) {
+      motivationEl.textContent = '📖 ' + dim.label + '（' + value + '分）：' + dim.description;
+      motivationEl.classList.remove('pop');
+      void motivationEl.offsetWidth;
+      motivationEl.classList.add('pop');
+    };
+
+    // ── 4. 绑定训练按钮 ──
+    radar.bindTrainButton(trainBtn, motivationEl);
+
+    // ── 5. 启动入场动画（仅首次或 localStorage 无数据时播放）──
+    var saved = localStorage.getItem(radar.opts.storageKey);
+    if (saved) {
+      motivationEl.textContent = '✨ 欢迎回来！继续修炼吧';
+      motivationEl.classList.add('pop');
+    } else {
+      radar.startInitialAnimation();
+    }
+  });
+})();
+</script>
+</body>
+</html>
